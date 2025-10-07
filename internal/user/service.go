@@ -32,6 +32,22 @@ func (s *Service) GetUser(id int) (User, error) {
 	return s.repo.ByID(ctx, id)
 }
 
+func (s *Service) UpdateUser(id int, r UpdateRequest) (User, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var hash *string
+	if r.Password != nil {
+		h, err := bcrypt.GenerateFromPassword([]byte(*r.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return User{}, err
+		}
+		hs := string(h)
+		hash = &hs
+	}
+	return s.repo.UpdatePartial(ctx, id, r.Name, r.Email, hash)
+}
+
 func (s *Service) DeleteUser(id int) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

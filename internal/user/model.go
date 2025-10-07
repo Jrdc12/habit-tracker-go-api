@@ -4,7 +4,7 @@ package user
 import "time"
 
 type User struct {
-	ID    int    `json:"id`
+	ID    int    `json:"id"`
 	Name  string `json:"name"`
 	Email string `json:"email"`
 	// I'm not including password as we shouldn't be returning that at all.
@@ -12,9 +12,16 @@ type User struct {
 }
 
 type CreateRequest struct {
-	Name     string `json:"name`
-	Email    string `json:"email`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+type UpdateRequest struct {
+	// omit empties are so it doesn't return json in a response
+	Name     *string `json:"name,omitempty"`
+	Email    *string `json:"email,omitempty"`
+	Password *string `json:"password,omitempty"`
 }
 
 var (

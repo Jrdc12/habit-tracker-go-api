@@ -14,6 +14,7 @@ import (
 type userService interface {
 	GetUser(id int) (user.User, error)
 	CreateUser(r user.CreateRequest) (user.User, error)
+	UpdateUser(id int, r user.UpdateRequest) (user.User, error)
 	DeleteUser(id int) error
 }
 
@@ -25,6 +26,7 @@ func NewRouter(svc userService) *http.ServeMux {
 
 	mux.HandleFunc("POST /user", createUserHandler(svc))
 	mux.HandleFunc("GET /user/{id}", getUserHandler(svc))
+	mux.HandleFunc("PATCH /user/{id}", updateUserHandler(svc))
 	mux.HandleFunc("DELETE /user/{id}", deleteUserHandler(svc))
 
 	return mux
@@ -66,6 +68,40 @@ func getUserHandler(svc userService) http.HandlerFunc {
 			return
 		}
 		u, err := svc.GetUser(id)
+		if err != nil {
+			switch {
+			case errors.Is(err, user.ErrNotFound):
+				http.Error(w, "User not found", http.StatusNotFound)
+			default:
+				http.Error(w, "internal error", http.StatusInternalServerError)
+			}
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(u)
+	}
+}
+
+func updateUserHandler(svc userService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, err := strconv.Atoi(r.PathValue("id"))
+		if err != nil || id <= 0 {
+			http.Error(w, "invalid id", http.StatusBadRequest)
+			return
+		}
+
+		var req user.UpdateRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if err := validation.ValidateUpdateUser(req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		u, err := svc.UpdateUser(id, req)
 		if err != nil {
 			switch {
 			case errors.Is(err, user.ErrNotFound):

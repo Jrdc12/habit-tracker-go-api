@@ -39,6 +39,44 @@ func (r *sqliteRepo) ByID(ctx context.Context, id int) (User, error) {
 	return u, nil
 }
 
+func (r *sqliteRepo) UpdatePartial(ctx context.Context, id int, name, email *string, passwordHash *string) (User, error) {
+	sets := make([]string, 0, 3)
+	args := make([]interface{}, 0, 4)
+
+	if name != nil {
+		sets = append(sets, "name = ?")
+		args = append(args, *name)
+	}
+	if email != nil {
+		sets = append(sets, "email = ?")
+		args = append(args, *email)
+	}
+	if passwordHash != nil {
+		sets = append(sets, "password_hash = ?")
+		args = append(args, *passwordHash)
+	}
+
+	if len(sets) == 0 {
+		return r.ByID(ctx, id)
+	}
+
+	q := "Update users SET " + strings.Join(sets, ", ") + " WHERE id = ?"
+	args = append(args, id)
+
+	res, err := r.db.ExecContext(ctx, q, args...)
+	if err != nil {
+		if strings.Contains(strings.ToLower(err.Error()), "unique constraint failed") {
+			return User{}, ErrEmailExists
+		}
+		return User{}, err
+	}
+	a, _ := res.RowsAffected()
+	if a == 0 {
+		return User{}, ErrNotFound
+	}
+	return r.ByID(ctx, id)
+}
+
 func (r *sqliteRepo) Delete(ctx context.Context, id int) error {
 	res, err := r.db.ExecContext(ctx, `DELETE FROM users WHERE id = ?`, id)
 	if err != nil {

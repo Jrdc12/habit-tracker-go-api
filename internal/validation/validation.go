@@ -13,6 +13,7 @@ var (
 	errEmailRequired = errors.New("email is required")
 	errPassRequired  = errors.New("password is required")
 	errEmailFormat   = errors.New("invalid email format")
+	errNoFields      = errors.New("no fields to update")
 )
 
 var emailRe = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
@@ -29,6 +30,13 @@ func ValidateCreateUser(r user.CreateRequest) error {
 	}
 	if !emailRe.MatchString(r.Email) {
 		return errEmailFormat
+	}
+	return nil
+}
+
+func ValidateUpdateUser(r user.UpdateRequest) error {
+	if r.Name == nil && r.Email == nil && r.Password == nil {
+		return errNoFields
 	}
 	return nil
 }

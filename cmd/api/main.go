@@ -16,7 +16,6 @@ import (
 )
 
 func main() {
-	// DB setup
 	dsn := "file:habiTrack.db?_busy_timeout=5000&_pragma=journal_mode(WAL)"
 	sqldb, closeFn, err := db.OpenSQLite(dsn)
 	if err != nil {
